@@ -1,0 +1,1014 @@
+---
+title: 'Preliminary development of an operating model for Peruvian common eel'
+subtitle: 'Common eel OM - data limited approach'
+author:
+- Bill Harford, Nature Analytics, 551 Lakeshore Rd E, Suite 105 Mississauga, ON, L5G 0A8, Canada
+- Report prepared for The Nature Conservancy
+date: July 19, 2021
+output: 
+   html_document:
+     toc: true
+     toc_depth: 3
+     toc_float: true
+     theme: flatly
+---
+
+# Introduction
+
+A preliminary demonstration of operating model (OM) building using the openMSE framework. This report and accompanying R code demonstrate the data-limited approach to building an OM for the common eel of Peru. The OM is developed with emphasis on fisheries operating near Tumbes, Peru.
+
+
+
+# Operating Model 
+## Species Information 
+
+**Species**: *Ophichthus remiger*
+
+**Common Name**: *Common eel*
+
+**Management Agency**: Instituto del Mar del Peru (IMARPE)
+
+**Region**: Tumbes, Peru
+
+**Sponsor**: The Nature Conservancy
+
+## OM Parameters 
+**OM Name**: Name of the operating model: <span style='color:blue'> OMName</span>
+
+**nsim**: The number of simulations: <span style='color:blue'> 48</span>
+
+
+
+**proyears**: The number of projected years: <span style='color:blue'> 50</span>
+
+
+
+**interval**: The assessment interval - how often would you like to update the management system? <span style='color:blue'> 4</span>
+
+**pstar**: The percentile of the sample of the management recommendation for each method: <span style='color:blue'> 0.5</span>
+
+**maxF**: Maximum instantaneous fishing mortality rate that may be simulated for any given age class: <span style='color:blue'> 0.8</span>
+
+**reps**: Number of samples of the management recommendation for each method. Note that when this is set to 1, the mean value of the data inputs is used. <span style='color:blue'> 1</span>
+
+**Source**: A reference to a website or article from which parameters were taken to define the operating model
+
+<span style='color:blue'> </span>
+
+# Stock Parameters 
+
+### Mortality and age:  maxage, R0, M, Msd
+
+**maxage**: The maximum age of individuals that is simulated. There are maxage+1 (recruitment to age-0) age classes in the storage matrices. maxage is the plus group where all age-classes > maxage are grouped, unless option switched off with OM@cpars$plusgroup=0 . Single value. Positive integer.
+
+Specified Value(s): <span style='color:blue'> 16</span>
+
+Maximum age was set a little higher than the maximum observed age of 14 years. 
+
+
+
+
+**R0**: Initial number of unfished recruits to age-0. This number is used to scale the size of the population to match catch or data, but does not affect any of the population dynamics unless the OM has been conditioned with data. As a result, for a data-limited fishery any number can be used for R0 . In data-rich stocks R0 may be estimated as part of a stock assessment, but for data limited stocks users can choose either an arbitrary number (say, 1000) or choose a number that produces simulated catches in recent historical years that are similar to real world catch data. Single value. Positive real number.
+
+Specified Value(s): <span style='color:blue'> 1000</span>
+
+Scaling parameter set at arbitrary value. 
+
+
+
+
+**M**: The instantaneous rate of natural mortality. For each simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. Uniform distribution lower and upper bounds. Non-negative real numbers.
+
+Specified Value(s): <span style='color:blue'> 0.2, 0.31</span>
+
+Natural mortality was specified for the range reported in the MSC pre-assessment SAI (2021). 
+
+
+
+
+**Msd**: Inter-annual variation in M expressed as a coefficient of variation of a log-normal distribution. For each simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. If this parameter is positive, yearly M is drawn from a log-normal distribution with a mean specified by log(M) drawn for that simulation and a standard deviation in log space specified by the value of Msd drawn for that simulation. Uniform distribution lower and upper bounds. Non-negative real numbers
+
+Specified Value(s): <span style='color:blue'> 0.05, 0.1</span>
+
+To address the possibility of M changing among years in these simulations we set a modest, arbitrary level of inter-annual variability with a lognormal CV of between 5% and 10% (i.e. 0.05 - 0.1), corresponding with 95% probability interval of +/-10% to +/- 20%.  
+
+
+
+
+```{r, echo=FALSE,include=FALSE}
+input <- file.path(system.file(package = 'MSEtool'),'Rmd/Stock/NaturalMortality.Rmd')
+ out <- knitr::knit_child(input) 
+```
+
+```{r, echo=FALSE, results='asis'}
+cat(out)
+```
+
+### Recruitment: h, SRrel, Perr, AC
+
+**h**: Steepness of the stock recruit relationship. Steepness governs the proportion of unfished recruits produced when the stock is at 20% of the unfished population size. For each simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. This value is the same in all years of a given simulation. Uniform distribution lower and upper bounds. Values from 1/5 to 1.
+
+Specified Value(s): <span style='color:blue'> 0.3, 0.9</span>
+
+Highly uncertain parameter. Given current emphasis on surplus production modeling, a wide range for steepness was specified over which the performance of SP models could be evaluated. 
+
+
+
+
+**SRrel**: Type of stock-recruit relationship. Use 1 to select a Beverton Holt relationship, 2 to select a Ricker relationship. Single value. Integer
+
+Specified Value(s): <span style='color:blue'> 1</span>
+
+Beverton-Holt form assumed.  
+
+
+
+
+**Perr**: Recruitment process error, which is defined as the standard deviation of the recruitment deviations in log space. For each simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. Uniform distribution lower and upper bounds. Non-negative real numbers.
+
+Specified Value(s): <span style='color:blue'> 0.6, 0.9</span>
+
+No estimates for recruitment variability were available at time of OM specification. 
+Bounds for this parameter were set to reflect highly variable recruitment.  
+
+
+
+
+**AC**: Autocorrelation in the recruitment deviations in log space. For each simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided, and used to add lag-1 auto-correlation to the log recruitment deviations. Uniform distribution lower and upper bounds. Non-negative real numbers.
+
+Specified Value(s): <span style='color:blue'> 0.1, 0.6</span>
+
+A wide range of values was used for auto-correlation in recruitment to reflect the uncertainty in this parameter. 
+
+
+
+
+```{r, echo=FALSE,include=FALSE}
+input <- file.path(system.file(package = 'MSEtool'),'Rmd/Stock/Recruitment.Rmd')
+ out <- knitr::knit_child(input) 
+```
+
+```{r, echo=FALSE, results='asis'}
+cat(out)
+```
+
+### Growth: Linf, K, t0, LenCV, Ksd, Linfsd
+
+**Linf**: The von Bertalanffy growth parameter Linf, which specifies the average maximum size that would reached by adult fish if they lived indefinitely. For each simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. This value is the same in all years unless Linfsd is a positive number. Uniform distribution lower and upper bounds. Positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 98, 137</span>
+
+Used range reported by SAI (2021), based on studies that collected otoliths for age estimation.  
+
+
+
+
+**K**: The von Bertalanffy growth parameter k, which specifies the average rate of growth. For each simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. This value is the same in all years unless Ksd is a positive number. Uniform distribution lower and upper bounds. Positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 0.12, 0.14</span>
+
+Used range reported by SAI (2021), based on studies that collected otoliths for age estimation.   
+
+
+
+
+**t0**: The von Bertalanffy growth parameter t0, which specifies the theoretical age at a size 0. For each simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. Uniform distribution lower and upper bounds. Non-positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 0.1, 2.55</span>
+
+Used range reported by SAI (2021), based on studies that collected otoliths for age estimation.  
+
+
+
+
+**LenCV**: The coefficient of variation (defined as the standard deviation divided by mean) of the length-at-age. For each simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided to specify the distribution of observed length-at-age, and the CV of this distribution is constant for all age classes (i.e, standard deviation increases proportionally with the mean). Uniform distribution lower and upper bounds. Positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 0.1, 0.15</span>
+
+Unknown. Default values used. 
+
+
+
+
+**Ksd**: Inter-annual variation in K. For each simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. If this parameter has a positive value, yearly K is drawn from a log-normal distribution with a mean specified by the value of K drawn for that simulation and a standard deviation (in log space) specified by the value of Ksd drawn for that simulation. Uniform distribution lower and upper bounds. Non-negative real numbers.
+
+Specified Value(s): <span style='color:blue'> 0, 0.05</span>
+
+Inter-annual variability unknown. Assumed up to 5% 
+
+
+
+
+**Linfsd**: Inter-annual variation in Linf. For each simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. If this parameter has a positive value, yearly Linf is drawn from a log-normal distribution with a mean specified by the value of Linf drawn for that simulation and a standard deviation (in log space) specified by the value of Linfsd drawn for that simulation. Uniform distribution lower and upper bounds. Non-negative real numbers.
+
+Specified Value(s): <span style='color:blue'> 0, 0.05</span>
+
+Inter-annual variability unknown. Assumed up to 5% 
+
+
+
+
+```{r, echo=FALSE,include=FALSE}
+input <- file.path(system.file(package = 'MSEtool'),'Rmd/Stock/Growth.Rmd')
+ out <- knitr::knit_child(input) 
+```
+
+```{r, echo=FALSE, results='asis'}
+cat(out)
+```
+
+### Maturity: L50, L50_95
+
+**L50**: Length at 50% maturity. For each simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. The L50 and L50_95 parameters are converted to ages using the growth parameters provided and used to construct a logistic curve to determine the proportion of the population that is mature in each age class. Uniform distribution lower and upper bounds. Positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 39, 63.7</span>
+
+Used range of values reported for geographies in proximity to Tumbes 
+
+
+
+
+**L50_95**: Difference in lengths between 50% and 95% maturity. For each simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. The value drawn is then added to the length at 50% maturity to determine the length at 95% maturity. This parameterization is used instead of specifying the size at 95 percent maturity to avoid situations where the value drawn for the size at 95% maturity is smaller than that at 50% maturity. The L50 and L50_95 parameters are converted to ages using the growth parameters provided and used to construct a logistic curve to determine the proportion of the population that is mature in each age class. Uniform distribution lower and upper bounds. Positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 9.7, 34.3</span>
+
+Used range of values reported for geographies in proximity to Tumbes. 
+
+
+
+
+```{r, echo=FALSE,include=FALSE}
+input <- file.path(system.file(package = 'MSEtool'),'Rmd/Stock/Maturity.Rmd')
+ out <- knitr::knit_child(input) 
+```
+
+```{r, echo=FALSE, results='asis'}
+cat(out)
+```
+
+### Stock depletion and Discard Mortality: D, Fdisc
+
+**D**: Estimated current level of stock depletion, which is defined as the current spawning stock biomass divided by the unfished spawning stock biomass. For each simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. This parameter is used during model initialization to select a series of yearly historical recruitment values and fishing mortality rates that, based on the information provided, could have resulted in the specified depletion level in the simulated last historical year. Uniform distribution lower and upper bounds. Positive real numbers (typically < 1)
+
+Specified Value(s): <span style='color:blue'> 0.6, 0.76</span>
+
+Since the minimum size limit is within proximity to size at maturity, the 95% credible interval of relative vulnerable biomass from the stock assessment was used as a proxy for depletion range.   
+
+
+
+
+**Fdisc**: The instantaneous discard mortality rate the stock experiences when fished using the gear type specified in the corresponding fleet object and discarded. For each simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. Uniform distribution lower and upper bounds. Non-negative real numbers.
+
+Specified Value(s): <span style='color:blue'> 0, 0</span>
+
+The base-case model assumed no discarding and no discard mortality. 
+
+
+
+
+```{r, echo=FALSE,include=FALSE}
+input <- file.path(system.file(package = 'MSEtool'),'Rmd/Stock/Depletion.Rmd')
+ out <- knitr::knit_child(input) 
+```
+
+```{r, echo=FALSE, results='asis'}
+cat(out)
+```
+
+### Length-weight conversion parameters: a, b
+
+**a**: The alpha parameter in allometric length-weight relationship. Single value. Weight parameters are used to determine catch-at-age and population-at-age from the number of individuals in each age class and the length of each individual, which is drawn from a normal distribution determined by the Linf , K , t0 , and LenCV parameters. As a result, they function as a way to scale between numbers at age and biomass, and are not stochastic parameters. Single value. Positive real number.
+
+Specified Value(s): <span style='color:blue'> 0</span>
+
+Chicaiza (2013, 2016)  
+
+
+
+
+**b**: The beta parameter in allometric length-weight relationship. Single value. Weight parameters are used to determine catch-at-age and population-at-age from the number of individuals in each age class and the length of each individual, which is drawn from a normal distribution determine by the Linf , K , t0 , and LenCV parameters. As a result, they function as a way to scale between numbers at age and biomass, and are not stochastic parameters. Single value. Positive real number.
+
+Specified Value(s): <span style='color:blue'> 3.34</span>
+
+Chicaiza (2013, 2016) 
+
+
+
+
+### Spatial distribution and movement: Size_area_1, Frac_area_1, Prob_staying
+
+**Size_area_1**: The size of area 1 relative to area 2. The fraction of the unfished biomass in area 1. Please specify numbers between 0 and 1. For each simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. For example, if Size_area_1 is 0.2, then 20% of the total area is allocated to area 1. Fishing can occur in both areas, or can be turned off in one area to simulate the effects of a no take marine reserve. Uniform distribution lower and upper bounds. Positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 0.5, 0.5</span>
+
+A mixed stock is assumed. 
+
+
+
+
+**Frac_area_1**: The fraction of the unfished biomass in area 1. Please specify numbers between 0 and 1. For each simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. For example, if Frac_area_1 is 0.5, then 50% of the unfished biomass is allocated to area 1, regardless of the size of area 1 (i.e, size and fraction in each area determine the density of fish, which may impact fishing spatial targeting). In each time step recruits are allocated to each area based on the proportion specified in Frac_area_1. Uniform distribution lower and upper bounds. Positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 0.5, 0.5</span>
+
+A mixed stock is assumed. 
+
+
+
+
+**Prob_staying**: The probability of individuals in area 1 remaining in area 1 over the course of one year. Please specify numbers between 0 and 1. For each simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. For example, in an area with a Prob_staying value of 0.95 each fish has a 95% probability of staying in that area in each time step, and a 5% probability of moving to the other area. Uniform distribution lower and upper bounds. Positive fraction.
+
+Specified Value(s): <span style='color:blue'> 0.5, 0.5</span>
+
+A mixed stock is assumed 
+
+
+
+
+```{r, echo=FALSE,include=FALSE}
+input <- file.path(system.file(package = 'MSEtool'),'Rmd/Stock/Spatial.Rmd')
+ out <- knitr::knit_child(input) 
+```
+
+```{r, echo=FALSE, results='asis'}
+cat(out)
+```
+
+# Fleet Parameters 
+
+### Historical years of fishing, spatial targeting: nyears, Spat_targ
+
+**nyears**: The number of years for the historical simulation. Single value. For example, if the simulated population is assumed to be unfished in 1975 and this is the year you want to start your historical simulations, and the most recent year for which there is data available is 2019, then nyears equals 45.
+
+Specified Value(s): <span style='color:blue'> 50</span>
+
+Borrowed from: Generic_Increasing effort 
+
+
+
+
+**Spat_targ**: Distribution of fishing in relation to vulnerable biomass (VB) across areas. The distribution of fishing effort is proportional to VB^Spat_targ. Upper and lower bounds of a uniform distribution. For each simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. This parameter allows the user to model either avoidance or spatial targeting behavior by the fleet. If the parameter value is 1, fishing effort is allocated across areas in proportion to the population density of that area. Values below 1 simulate an avoidance behavior and values above 1 simulate a targeting behavior.
+
+Specified Value(s): <span style='color:blue'> 1, 1</span>
+
+Borrowed from: Generic_Increasing effort 
+
+
+
+
+### Trend in historical fishing effort (exploitation rate), interannual variability in fishing effort: EffYears, EffLower, EffUpper, Esd
+
+**EffYears**: Vector indicating the historical years where there is information available to infer the relative fishing effort expended.This vector is specified in terms of the position of the year in the vector rather than the calendar year. For example, say our simulation starts with an unfished stock in 1975,and the current year (the last year for which there is data available) is 2019. Then there are 45 historical years simulated, and EffYears should include numbers between 1 and 45. Note that there may not be information available for every historical year, especially for data poor fisheries. In these situations, the EffYears vector should include only the positions of the years for which there is information, and the vector may be shorter than the total number of simulated historical years (nyears).
+
+Borrowed from: Generic_Increasing effort 
+
+
+
+
+**EffLower**: Lower bound on relative fishing effort corresponding to EffYears. EffLower must be a vector that is the same length as EffYears describing how fishing effort has changed over time. Information on relative fishing effort can be entered in any units provided they are consistent across the entire vector because the data provided will be scaled to 1 (divided by the maximum number provided).
+
+Borrowed from: Generic_Increasing effort 
+
+
+
+
+**EffUpper**: Upper bound on relative fishing effort corresponding to EffYears. EffUpper must be a vector that is the same length as EffYears describing how fishing effort has changed over time. Information on relative fishing effort can be entered in any units provided they are consistent across the entire vector because the data provided will be scaled to 1 (divided by the maximum number provided).
+
+Borrowed from: Generic_Increasing effort 
+
+
+
+
+<style type='text/css'>
+.table {
+    width: 75%; 
+}
+</style>
+```{r, echo=FALSE, results='asis'}
+knitr::kable(Effvals, format='markdown', caption='')
+```
+
+**Esd**: Additional inter-annual variability in fishing mortality rate. For each historical simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. If this parameter has a positive (non-zero) value, the yearly fishing mortality rate is drawn from a log-normal distribution with a standard deviation (in log space) specified by the value of Esd drawn for that simulation. This parameter applies only to historical projections.
+
+Specified Value(s): <span style='color:blue'> 0.1, 0.4</span>
+
+Borrowed from: Generic_Increasing effort 
+
+
+
+
+```{r, echo=FALSE,include=FALSE}
+input <- file.path(system.file(package = 'MSEtool'),'Rmd/Fleet/Effort.Rmd')
+ out <- knitr::knit_child(input) 
+```
+
+```{r, echo=FALSE, results='asis'}
+cat(out)
+```
+
+### Annual increase in catchability, interannual variability in catchability: qinc, qcv
+
+**qinc**: Mean temporal trend in catchability (also though of as the efficiency of fishing gear) parameter, expressed as a percentage change in catchability (q) per year. For each simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. Positive numbers indicate an increase and negative numbers indicate a decrease. q then changes by this amount for in each year of the simulation This parameter applies only to forward projections.
+
+Specified Value(s): <span style='color:blue'> -2, 2</span>
+
+Borrowed from: Generic_Increasing effort 
+
+
+
+
+**qcv**: Inter-annual variability in catchability expressed as a coefficient of variation. For each simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. This parameter applies only to forward projections.
+
+Specified Value(s): <span style='color:blue'> 0.1, 0.3</span>
+
+Borrowed from: Generic_Increasing effort 
+
+
+
+
+```{r, echo=FALSE,include=FALSE}
+input <- file.path(system.file(package = 'MSEtool'),'Rmd/Fleet/Catchability.Rmd')
+ out <- knitr::knit_child(input) 
+```
+
+```{r, echo=FALSE, results='asis'}
+cat(out)
+```
+
+### Fishery gear length selectivity: L5, LFS, Vmaxlen, isRel
+
+**L5**: Shortest length at which 5% of the population is vulnerable to selection by the gear used in this fleet. Values can either be specified as lengths (in the same units used for the maturity and growth parameters in the stock object) or as a percentage of the size of maturity (see the parameter isRel for more information). For each simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. This value is the same in all years unless cpars is used to provide time-varying selection.
+
+Specified Value(s): <span style='color:blue'> 0.2, 0.4</span>
+
+Borrowed from: Generic_Increasing effort 
+
+
+
+
+**LFS**: Shortest length at which 100% of the population is vulnerable to selection by the gear used by this fleet. Values can either be specified as lengths (in the same units used for the maturity and growth parameters in the stock object) or as a percentage of the size of maturity (see the parameter isRel for more information). For each simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. This value is the same in all years unless cpars is used to provide time-varying selection.
+
+Specified Value(s): <span style='color:blue'> 0.75, 1.1</span>
+
+Borrowed from: Generic_Increasing effort 
+
+
+
+
+**Vmaxlen**: Proportion of fish selected by the gear at the asymptotic length ('Stock@Linf'). Upper and Lower bounds between 0 and 1. A value of 1 indicates that 100% of fish are selected at the asymptotic length, and the selection curve is logistic. If Vmaxlen is less than 1 the selection curve is dome shaped. For example, if Vmaxlen is 0.4, then only 40% of fish are vulnerable to the fishing gear at the asymptotic length.
+
+Specified Value(s): <span style='color:blue'> 0, 1</span>
+
+Borrowed from: Generic_Increasing effort 
+
+
+
+
+**isRel**: Specify whether selection and retention parameters use absolute lengths or relative to the size of maturity. Single logical value (TRUE or FALSE).
+
+Specified Value(s): <span style='color:blue'> TRUE</span>
+
+Borrowed from: Generic_Increasing effort 
+
+
+
+
+### Fishery length retention: LR5, LFR, Rmaxlen, DR
+
+**LR5**: Shortest length at which 5% of the population is vulnerable to retention by the fleet. Values can either be specified as lengths (in the same units used for the maturity and growth parameters in the stock object) or as a percentage of the size of maturity (see the parameter isRel for more information). For each simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. This value is the same in all years unless cpars is used to provide time-varying selection.
+
+Specified Value(s): <span style='color:blue'> 0, 0</span>
+
+Borrowed from: Generic_Increasing effort 
+
+
+
+
+**LFR**: Shortest length where 100% of the population is vulnerable to retention by the fleet. Values can either be specified as lengths (in the same units used for the maturity and growth parameters in the stock object) or as a percentage of the size of maturity (see the parameter isRel for more information). For each simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. This value is the same in all years unless cpars is used to provide time-varying selection.
+
+Specified Value(s): <span style='color:blue'> 0, 0</span>
+
+Borrowed from: Generic_Increasing effort 
+
+
+
+
+**Rmaxlen**: Proportion of fish retained at the asymptotic length ('Stock@Linf'). Upper and Lower bounds between 0 and 1. A value of 1 indicates that 100% of fish are retained at the asymptotic length, and the selection curve is logistic. If Rmaxlen is less than 1 the retention curve is dome shaped. For example, if Rmaxlen is 0.4, then only 40% of fish at the asymptotic length are retained.
+
+Specified Value(s): <span style='color:blue'> 1, 1</span>
+
+Borrowed from: Generic_Increasing effort 
+
+
+
+
+**DR**: Discard rate, defined as the proportion of fully selected fish that are discarded by the fleet. Upper and Lower bounds between 0 and 1, with a value of 1 indicates that 100% of selected fish are discarded. For each simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided.
+
+Specified Value(s): <span style='color:blue'> 0, 0</span>
+
+Borrowed from: Generic_Increasing effort 
+
+
+
+
+### Current Year: CurrentYr
+
+**CurrentYr**: The last historical year simulated before projections begin. Single value. Note that this should match the last historical year specified in the Data object, which is usually the last historical year for which data is available.
+
+Specified Value(s): <span style='color:blue'> 50</span>
+
+Borrowed from: Generic_Increasing effort 
+
+
+
+
+### Existing Spatial Closures: MPA
+
+**MPA**: Logical argument (TRUE or FALSE). Creates an MPA in Area 1 for all years if true is selected. Defaults to FALSE.
+
+Specified Value(s): <span style='color:blue'> FALSE</span>
+
+Borrowed from: Generic_Increasing effort 
+
+
+
+
+
+
+
+
+# Obs Parameters 
+
+### Catch statistics: Cobs, Cbiascv, CAA_nsamp, CAA_ESS, CAL_nsamp, CAL_ESS
+
+**Cobs**: Observation error around the total catch. Observation error in the total catch is expressed as a coefficient of variation (CV). Cobs requires upper and lower bounds of a uniform distribution, and for each simulation a CV is sampled from this distribution. Each CV is used to specify a log-normal error distribution with a mean of 1 and a standard deviation equal to the sampled CV. The yearly observation error values for the catch data are then drawn from this distribution. For each time step the simulation model records the true catch, but the observed catch is generated by applying this yearly error term (plus any bias, if specified) to the true catch.
+
+Specified Value(s): <span style='color:blue'> 0.1, 0.2</span>
+
+Borrowed from: Precise-Unbiased 
+
+
+
+
+**Cbiascv**: Log-normally distributed coefficient of variation controlling the sampling bias in observed catch for each simulation. Bias occurs when catches are systematically skewed away from the true catch level (for example, due to underreporting of catch or undetected illegal catches). Cbiascv is a single value specifying the standard deviation of a log-normal distribution with a mean of 1 and a standard deviation equal to the sampled CV. For each simulation a bias value is drawn from this distribution, and that bias is applied across all years.
+
+Specified Value(s): <span style='color:blue'> 0.05</span>
+
+Borrowed from: Precise-Unbiased 
+
+
+
+
+**CAA_nsamp**: Number of catch-at-age observations collected per time step. For each time step a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. Positive integers.
+
+Specified Value(s): <span style='color:blue'> 150, 300</span>
+
+Borrowed from: Precise-Unbiased 
+
+
+
+
+**CAA_ESS**: Effective sample size of catch-at-age observations collected per time step. For each time step a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. CAA_ESS should not exceed CAA_nsamp. Positive integers.
+
+Specified Value(s): <span style='color:blue'> 50, 100</span>
+
+Borrowed from: Precise-Unbiased 
+
+
+
+
+**CAL_nsamp**: Number of catch-at-length observations collected per time step. For each time step a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. Positive integers.
+
+Specified Value(s): <span style='color:blue'> 150, 300</span>
+
+Borrowed from: Precise-Unbiased 
+
+
+
+
+**CAL_ESS**: Effective sample size. For each time step a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. CAL_ESS should not exceed CAL_nsamp. Positive integers.
+
+Specified Value(s): <span style='color:blue'> 50, 100</span>
+
+Borrowed from: Precise-Unbiased 
+
+
+
+
+### Index imprecision, bias and hyperstability: Iobs, Btobs, Btbiascv, beta
+
+**Iobs**: Observation error in the relative abundance index expressed as a coefficient of variation (CV). Iobs requires upper and lower bounds of a uniform distribution, and for each simulation a CV is sampled from this distribution. Each CV is used to specify a log-normal error distribution with a mean of 1 and a standard deviation equal to the sampled CV. The yearly observation error values for the index of abundance data are then drawn from this distribution. For each time step the simulation model records the true change in abundance, but the observed index is generated by applying this yearly error term (plus any bias, if specified) to the true relative change in abundance. Positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 0.1, 0.25</span>
+
+Borrowed from: Precise-Unbiased 
+
+
+
+
+**Btobs**: Observation error in the absolute abundance expressed as a coefficient of variation (CV). Btobs requires upper and lower bounds of a uniform distribution, and for each simulation a CV is sampled from this distribution. Each CV is used to specify a log-normal error distribution with a mean of 1 and a standard deviation equal to the sampled CV. The yearly observation error values for the absolute abundance data are then drawn from this distribution. For each time step the simulation model records the true abundance, but the observed abundance is generated by applying this yearly error term (plus any bias, if specified) to the true abundance. Positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 0.05, 0.2</span>
+
+Borrowed from: Precise-Unbiased 
+
+
+
+
+**Btbiascv**: Log-normally distributed coefficient (CV) controlling error in observations of the current stock biomass. Bias occurs when the observed index of abundance is is systematically higher or lower than the true relative abundance. Btbiascv is a single value specifying the standard deviation of a log-normal distribution with a mean of 1 and a standard deviation equal to the sampled CV. For each simulation a bias value is drawn from this distribution, and that bias is applied across all years. Positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 0.05, NA</span>
+
+Borrowed from: Precise-Unbiased 
+
+
+
+
+**beta**: A parameter controlling hyperstability/hyperdepletion in the measurement of abundance. For each simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. Values below 1 lead to hyperstability (the observed index decreases more slowly than the true abundance) and values above 1 lead to hyperdepletion (the observed index decreases more rapidly than true abundance). Positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 0.67, 1.5</span>
+
+Borrowed from: Precise-Unbiased 
+
+
+
+
+### Bias in maturity, natural mortality rate and growth parameters: LenMbiascv, Mbiascv, Kbiascv,t0biascv, Linfbiascv
+
+**LenMbiascv**: Log-normal coefficient of variation for sampling bias in observed length at 50 percent maturity. LenMbiascv is a single value specifying the standard deviation of a log-normal distribution with a mean of 1 and a standard deviation equal to the sampled CV. For each simulation a bias value is drawn from this distribution, and that bias is applied across all years. Positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 0.05</span>
+
+Borrowed from: Precise-Unbiased 
+
+
+
+
+**Mbiascv**: Log-normal coefficient of variation for sampling bias in observed natural mortality rate. Uniform distribution lower and upper bounds. Mbiascv is a single value specifying the standard deviation of a log-normal distribution with a mean of 1 and a standard deviation equal to the sampled CV. For each simulation a bias value is drawn from this distribution, and that bias is applied across all years. Positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 0.05</span>
+
+Borrowed from: Precise-Unbiased 
+
+
+
+
+**Kbiascv**: Log-normal coefficient of variation for sampling bias in observed growth parameter K. Kbiascv is a single value specifying the standard deviation of a log-normal distribution with a mean of 1 and a standard deviation equal to the sampled CV. For each simulation a bias value is drawn from this distribution, and that bias is applied across all years. Positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 0.05</span>
+
+Borrowed from: Precise-Unbiased 
+
+
+
+
+**t0biascv**: Log-normal coefficient of variation for sampling bias in observed t0. t0biascv is a single value specifying the standard deviation of a log-normal distribution with a mean of 1 and a standard deviation equal to the sampled CV. For each simulation a bias value is drawn from this distribution, and that bias is applied across all years. Positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 0.05</span>
+
+Borrowed from: Precise-Unbiased 
+
+
+
+
+**Linfbiascv**: Log-normal coefficient of variation for sampling bias in observed maximum length. Linfbiascv is a single value specifying the standard deviation of a log-normal distribution with a mean of 1 and a standard deviation equal to the sampled CV. For each simulation a bias value is drawn from this distribution, and that bias is applied across all years. Positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 0.05</span>
+
+Borrowed from: Precise-Unbiased 
+
+
+
+
+### Bias in length at first capture, length at full selection: LFCbiascv, LFSbiascv
+
+**LFCbiascv**: Log-normal coefficient of variation for sampling bias in observed length at first capture. LFCbiascv is a single value specifying the standard deviation of a log-normal distribution with a mean of 1 and a standard deviation equal to the sampled CV. For each simulation a bias value is drawn from this distribution, and that bias is applied across all years. Positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 0.05</span>
+
+Borrowed from: Precise-Unbiased 
+
+
+
+
+**LFSbiascv**: Log-normal coefficient of variation for sampling bias in length-at-full selection. LFSbiascv is a single value specifying the standard deviation of a log-normal distribution with a mean of 1 and a standard deviation equal to the sampled CV. For each simulation a bias value is drawn from this distribution, and that bias is applied across all years. Positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 0.05</span>
+
+Borrowed from: Precise-Unbiased 
+
+
+
+
+### Bias in fishery reference points, unfished biomass, FMSY, FMSY/M ratio, biomass at MSY relative to unfished:  FMSY_Mbiascv, BMSY_B0biascv
+
+**FMSY_Mbiascv**: Log-normal coefficient of variation for sampling bias in estimates of the ratio of the fishing mortality rate that gives the maximum sustainable yield relative to the assumed instantaneous natural mortality rate. FMSY/M. FMSY_Mbiascv is a single value specifying the standard deviation of a log-normal distribution with a mean of 1 and a standard deviation equal to the sampled CV. For each simulation a bias value is drawn from this distribution, and that bias is applied across all years. Positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 0.25</span>
+
+Borrowed from: Precise-Unbiased 
+
+
+
+
+**BMSY_B0biascv**: Log-normal coefficient of variation for sampling bias in estimates of the BMSY relative to unfished biomass (BMSY/B0). BMSY_B0biascv is a single value specifying the standard deviation of a log-normal distribution with a mean of 1 and a standard deviation equal to the sampled CV. For each simulation a bias value is drawn from this distribution, and that bias is applied across all years. Positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 0.1</span>
+
+Borrowed from: Precise-Unbiased 
+
+
+
+
+### Management targets in terms of the index (i.e., model free), the total annual catches and absolute biomass levels: Irefbiascv, Crefbiascv, Brefbiascv
+
+**Irefbiascv**: Log-normal coefficient of variation for sampling bias in the observed relative index of abundance (Iref). Irefbiascv is a single value specifying the standard deviation of a log-normal distribution with a mean of 1 and a standard deviation equal to the sampled CV. For each simulation a bias value is drawn from this distribution, and that bias is applied across all years. Positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 0.1</span>
+
+Borrowed from: Precise-Unbiased 
+
+
+
+
+**Crefbiascv**: Log-normal coefficient of variation for sampling bias in the observed reference catch (Cref). Crefbiascv is a single value specifying the standard deviation of a log-normal distribution with a mean of 1 and a standard deviation equal to the sampled CV. For each simulation a bias value is drawn from this distribution, and that bias is applied across all years. Positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 0.1</span>
+
+Borrowed from: Precise-Unbiased 
+
+
+
+
+**Brefbiascv**: Log-normal coefficient of variation for sampling bias in the observed reference biomass (Bref). Brefbiascv is a single value specifying the standard deviation of a log-normal distribution with a mean of 1 and a standard deviation equal to the sampled CV. For each simulation a bias value is drawn from this distribution, and that bias is applied across all years. Positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 0.1</span>
+
+Borrowed from: Precise-Unbiased 
+
+
+
+
+### Depletion bias and imprecision: Dbiascv, Dobs
+
+**Dbiascv**: Log-normal coefficient of variation for sampling bias in the observed depletion level. Dbiascv is a single value specifying the standard deviation of a log-normal distribution with a mean of 1 and a standard deviation equal to the sampled CV. For each simulation a bias value is drawn from this distribution, and that bias is applied across all years. Positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 0.2</span>
+
+Borrowed from: Precise-Unbiased 
+
+
+
+
+**Dobs**: Log-normal coefficient of variation controlling error in observations of stock depletion among years. Observation error in the depletion expressed as a coefficient of variation (CV). Dobs requires the upper and lower bounds of a uniform distribution, and for each simulation a CV is sampled from this distribution. Each CV is used to specify a log-normal error distribution with a mean of 1 and a standard deviation equal to the sampled CV. The yearly observation error values for the depletion data are then drawn from this distribution. For each time step the simulation model records the true depletion, but the observed depletion is generated by applying this yearly error term (plus any bias, if specified) to the true depletion.
+
+Specified Value(s): <span style='color:blue'> 0.03, 0.1</span>
+
+Borrowed from: Precise-Unbiased 
+
+
+
+
+### Recruitment compensation and trend: hbiascv, Recbiascv, sigmaRbiascv
+
+**hbiascv**: Log-normal coefficient of variation for sampling persistent bias in steepness. hbiascv is a single value specifying the standard deviation of a log-normal distribution with a mean of 1 and a standard deviation equal to the sampled CV. For each simulation a bias value is drawn from this distribution, and that bias is applied across all years. Positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 0.1</span>
+
+Borrowed from: Precise-Unbiased 
+
+
+
+
+**Recbiascv**: Log-normal coefficient of variation for sampling persistent bias in recent recruitment strength. Recbiascv requires the upper and lower bounds of a uniform distribution, and for each simulation a CV is sampled from this distribution. Each CV is used to specify a log-normal error distribution with a mean of 1 and a standard deviation equal to the sampled CV. The yearly bias values for the depletion data are then drawn from this distribution. Positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 0.05, 0.1</span>
+
+Borrowed from: Precise-Unbiased 
+
+
+
+
+**sigmaRbiascv**: Log-normal coefficient of variation for sampling persistent bias in recruitment variability. sigmaRbiascv is a single value specifying the standard deviation of a log-normal distribution with a mean of 1 and a standard deviation equal to the sampled CV. For each simulation a bias value is drawn from this distribution, and that bias is applied across all years. Positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 0.05</span>
+
+Borrowed from: Precise-Unbiased 
+
+
+
+
+### Effort: Eobs, Ebiascv
+
+**Eobs**: Observation error around the total effort. Observation error in the total effort is expressed as a coefficient of variation (CV). Eobs requires upper and lower bounds of a uniform distribution, and for each simulation a CV is sampled from this distribution. Each CV is used to specify a log-normal error distribution with a mean of 1 and a standard deviation equal to the sampled CV. The yearly observation error values for the effort data are then drawn from this distribution. For each time step the simulation model records the true effort, but the observed effort is generated by applying this yearly error term (plus any bias, if specified) to the true effort.
+
+Specified Value(s): <span style='color:blue'> 0.1, 0.2</span>
+
+Borrowed from: Precise-Unbiased 
+
+
+
+
+**Ebiascv**: Log-normally distributed coefficient of variation controlling the sampling bias in observed effort for each simulation. Bias occurs when effort is systematically skewed away from the true effort level. Ebiascv is a single value specifying the standard deviation of a log-normal distribution with a mean of 1 and a standard deviation equal to the sampled CV. For each simulation a bias value is drawn from this distribution, and that bias is applied across all years.
+
+Specified Value(s): <span style='color:blue'> 0.05</span>
+
+Borrowed from: Precise-Unbiased 
+
+
+
+
+
+### Obs Plots
+```{r, echo=FALSE,include=FALSE}
+input <- file.path(system.file(package = 'MSEtool'),'Rmd/Obs/Obs.Rmd')
+ out <- knitr::knit_child(input) 
+```
+
+```{r, echo=FALSE, results='asis'}
+cat(out)
+```
+
+# Imp Parameters 
+
+### Output Control Implementation Error: TACFrac, TACSD
+
+**TACFrac**: Mean fraction of recommended TAC that is actually taken. For each historical simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. This value is the mean TAC fraction obtained across all years of that simulation, and a yearly TAC frac is drawn from a log-normal distribution with the simulation mean and a coefficient of variation specified by the value of TACSD drawn for that simulation. If the value drawn is greater than 1 the amount of catch taken is greater than that recommended by the TAC, and if it is less than 1 the amount of catch taken is less than that recommended by the TAC. Positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 1, 1</span>
+
+Borrowed from: Perfect_Imp 
+
+
+
+
+**TACSD**: Log-normal coefficient of variation in the fraction of recommended TAC that is actually taken. For each historical simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. This value is used, along with the TACFrac drawn for that simulation, to create a log-normal distribution that yearly values specifying the actual amount of catch taken are drawn from. Positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 0, 0</span>
+
+Borrowed from: Perfect_Imp 
+
+
+
+
+### Effort Control Implementation Error: TAEFrac, TAESD
+
+**TAEFrac**: Mean fraction of recommended TAE that is actually taken. For each historical simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. This value is the mean TAE fraction obtained across all years of that simulation, and a yearly TAE frac is drawn from a log-normal distribution with the simulation mean and a coefficient of variation specified by the value of TAESD drawn for that simulation. If the value drawn is greater than 1 the amount of effort employed is greater than that recommended by the TAE, and if it is less than 1 the amount of effort employed is less than that recommended by the TAE. Positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 1, 1</span>
+
+Borrowed from: Perfect_Imp 
+
+
+
+
+**TAESD**: Log-normal coefficient of variation in the fraction of recommended TAE that is actually taken. For each historical simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. This value is used, along with the TAEFrac drawn for that simulation, to create a log-normal distribution that yearly values speciying the actual amount of efort employed are drawn from. Positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 0, 0</span>
+
+Borrowed from: Perfect_Imp 
+
+
+
+
+### Size Limit Control Implementation Error: SizeLimFrac, SizeLimSD
+
+**SizeLimFrac**: Mean fraction of recommended size limit that is actually retained. For each historical simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. This value is the mean size limit fraction obtained across all years of that simulation, and a yearly size limit fraction is drawn from a log-normal distribution with the simulation mean and a coefficient of variation specified by the value of SizeLimSD drawn for that simulation. If the value drawn is greater than 1 the size of fish retained is greater than that recommended by the size limit, and if it is less than 1 the amount of size of fish retained is less than that recommended by the size limit. Positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 1, 1</span>
+
+Borrowed from: Perfect_Imp 
+
+
+
+
+**SizeLimSD**: Log-normal coefficient of variation in the fraction of recommended size limit that is actually retained. For each historical simulation a single value is drawn from a uniform distribution specified by the upper and lower bounds provided. This value is used, along with the SizeLimFrac drawn for that simulation, to create a log-normal distribution that yearly values speciying the actual fraction of the size limit retained are drawn from. Positive real numbers.
+
+Specified Value(s): <span style='color:blue'> 0, 0</span>
+
+Borrowed from: Perfect_Imp 
+
+
+
+
+
+
+
+
+
+### Imp Plots
+```{r, echo=FALSE,include=FALSE}
+input <- file.path(system.file(package = 'MSEtool'),'Rmd/Imp/Imp.Rmd')
+ out <- knitr::knit_child(input) 
+```
+
+```{r, echo=FALSE, results='asis'}
+cat(out)
+```
+
+
+# Historical Simulation Plots
+```{r, echo=FALSE,include=FALSE}
+input <- file.path(system.file(package = 'MSEtool'),'Rmd/Hist/Hist.Rmd')
+ out <- knitr::knit_child(input) 
+```
+
+```{r, echo=FALSE, results='asis'}
+cat(out)
+```
+
+# References
+
+
+
+Arancibia H, Alarcón L, Caballero R, Concha R, Carmona A. (2000) “Nuevas pesquerías para Chile Central. Anguila común (Ophichthus pacifici)”. Proyecto FONDEF D97I-1058. Desarrollo de nuevas pesquerías de recursos marinos bentónicos, pelágicos y demersales en Chile Central. Documento Téc- nico No3, UNITED, Departamento de Oceanografía, Universidad de Concepción, 20 pp. 
+
+
+
+Castillo R (1991). “Análisis de la Pesca experimental del recurso anguila común (Ophichthus pacifici) en Paita durante 1991”. Informe laboratorio costero de Paita del IMARPE. 25 Pp.
+
+
+
+Castillo R, Gómez E, Paredes F. (2000). “Pesquería y biología de la anguila común
+
+Ophichthus pacifici (Günter) en el Perú.” Inf. Prog. Inst. Mar Perú. Dic. 134. 19 pp.
+
+
+
+Chicaiza, D. (2005). “Principales aspectos Biológicos- Pesqueros de la anguila común (Ophichthus pacifici) (Valenciennes, 1839) durante Febrero 2004 - Marzo 2005.  Instituto Nacional de Pesca Proceso de Investigación de Recursos Bioacuáticos y su Ambiente. Guayaquil, Guayas, Ecuador: Ecuador.
+
+
+
+Chicaiza D. (2013). “Pesca Industrial de anguila común (Ophichthus remiger) en el Golfo de Guayaquil–Ecuador: Análisis de algunos indicadores biológicos y pesqueros durante el seguimiento a la pesca piloto 2012.” Instituto Nacional de Pesca. Informe Técnico.
+
+
+
+Chicaiza D. (2016). “Indicadores biológicos reproductivos de la Angila Común (Ophichthus remiger) y sus implicaciones en el manejo de la Pesca Industrial en el Golfo de Guayaquil” (Master's thesis). Universidad de Guayaquil
+
+
+
+España N. (2015). “Incidencia de la talla en el desarrollo gonadal del recurso Ophichthus remiger (VALENCIENNES, 1842)”. Master's thesis, Faculty of Natural Sciences. University of Guayaquil, 2015.
+
+FAO (May 2013) “La República Del Ecuador” Accessed: 10-May-2021 http://www.fao.org/fishery/facp/ECU/es
+
+
+
+FOA (May 2014) “The Republic of Chile” Accessed: 10-May-2021
+
+http://www.fao.org/fishery/facp/CHL/es
+
+
+
+FAO (February 2019) “The Republic of Peru” Accessed: 10-May-2021 http://www.fao.org/fishery/facp/PER/es 
+
+FAO (June 2019) “The Republic of Colombia” Accessed: 10-May-2021 http://www.fao.org/fishery/facp/COL/es 
+
+
+
+INP Instituto Nacional de Pesca (2018) Anguilla Fishing File-RPG 022 http://www.institutopesca.gob.ec/wp-content/uploads/2018/01/FICHA-022-ANGUILA-RPG-1.pdf
+
+
+
+INP Instituto Nacional de Pesca (2021) “Program: Monitoring of Artisanal Fishing Landings of Demersal Fish in the Main Ports of Ecuador” Accessed: 10-May-2021 http://www.institutopesca.gob.ec/pesca-artesanal/
+
+
+
+IMARPE. Instituto del Mar de Perú. (2012) “Edad y crecimiento de Ophichthus remiger (Valenciennes) en el norte del mar peruano, 2004.” INSTITUTO DEL MAR DEL PERÚ INFORME ISSN 0378-7702 Volumen 39, Números 1-2 
+
+
+
+IMARPE. Instituto del Mar de Perú. (Octubre-Diciembre de 2007). Informe, volumen 34,  número 4. “La anguila Ophichthus remiger en aguas de las Islas Lobos de Afuera, Lambayeque, durante el 2005."  INSTITUTO DEL MAR DEL PERÚ INFORME ISSN 0378-7702 Volumen 34, Número 4
+
+
+
+IMARPE Instituto del Mar de Perú. (2020) Informe de la pesca exploratoria del recurso anguila Ophichthus remiger. R.M. N°402-2019-PRODUCE
+
+Kjesbu OS, Holm JC. (1994). “Oocyte recruitment in first-time spawning Atlantic cod (Gadus morhua) in relation to feeding regime.” Can. J. Fish. Aquat. Sci. 51, 1893–1898.
+
+
+
+Pauly D. (1983). “Some simple methods for the assessment of tropical fish stocks” (No. 234). Food & Agriculture Org. Rome.
+
+
+
+PROMPEX – IMARPE. (2003). GERENCIA DE PROMOCIÓN DE MERCADOS DEL SECTOR PESCA Y ACUICULTURA. Breve Perfil, Bilológico Pesquero y Comercial de la Anguila. Perú, Perú. http://www.imarpe.pe/imarpe/archivos/articulos/imarpe/biblioteca/adj_perfil_anguila.pdf
+
+
+
+Rust, Susanne (September 2020) “Tensions rise in Ecuador and Peru as Chinese fishing fleet moves south from Galapagos” Los Angeles Times. Accessed: 10-May-2021 https://www.latimes.com/environment/story/2020-09-23/tensions-rise-in-ecuador-and-peru-as-chinese-fishing-fleet-moves-south-from-galapagos
+
+SAI Global (2021) “Pesca de Anguila Ophichthus remiger en el Norte  del Perú entre			 lasregiones de Tumbes a Piura.”
+
+
+
+Schuhbauer (2006). “Fishery and population dynamics of the punctuated snake-eel, Ophichthus remiger, (Ophichthidae), North Perú.” Thesis. M.Sc. In International Studies in Aquatic Tropical Ecology. University of Bremen, Faculty for Biology & Chemistry. 63pp. 				
+
+Vera M. (2004). “Distribución espacial y aspectos biológicos pesqueros de Ophichthus remiger “anguila común” en el litoral del departamento de Lambayeque (mayo 2002 – julio 2003)”. Tesis. Lic. Bio – Pesq. UNPRG. Lambayeque Perú. 89pp. 
+
+
+
+Vera, M. (2006). Talla de la primera madurez y época de desove de "anguila común" O. remiger (Valenciennes, 1842) en el litoral de la región Tumbes. Tumbes-Instituto del mar del Perú.
+
+Weatherley AH. Gill HS. (1987). “The biology of fish growth”. Academic Press, London pp 139-146
+
+
+
